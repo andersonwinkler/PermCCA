@@ -1,4 +1,4 @@
-function pfwer = permcca(varargin)
+function [pfwer,r,A,B,U,V] = permcca(varargin)
 % Permutation inference for canonical correlation
 % analysis (CCA).
 %
@@ -24,7 +24,7 @@ function pfwer = permcca(varargin)
 % - A   : Canonical coefficients, left side.
 % - B   : Canonical coefficients, right side.
 % - U   : Canonical variables, left side.
-% - R   : Canonical variables, right side.
+% - V   : Canonical variables, right side.
 %
 % ___________________________________________
 % AM Winkler, O Renaud, SM Smith, TE Nichols
