@@ -1,7 +1,11 @@
-function [pfwer,r,A,B,U,V] = permcca(varargin)
+function varargout = permcca(varargin)
 % Permutation inference for canonical correlation
 % analysis (CCA).
 %
+% Usage:
+% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,S,partial)
+% 
+% 
 % Inputs:
 % - Y        : Left set of variables, size N by P.
 % - X        : Left set of variables, size N by Q.
@@ -29,7 +33,7 @@ function [pfwer,r,A,B,U,V] = permcca(varargin)
 % ___________________________________________
 % AM Winkler, O Renaud, SM Smith, TE Nichols
 % NIH - Univ. of Geneva - Univ. of Oxford
-% Feb/2020
+% Mar/2020
 
 % Read input arguments
 narginchk(2,7)
@@ -104,7 +108,7 @@ Qnew = size(X,1);
 S    = size(W,2);
 
 % Initial CCA
-[A,B,~] = cca(Y,X,R,S);
+[A,B,r] = cca(Y,X,R,S);
 U = Y*[A null(A')];
 V = X*[B null(B')];
 
@@ -126,8 +130,8 @@ for p = 1:nP
     
     % For each canonical variable
     for k = 1:K
-        [~,~,r] = cca(Qz*U(idxY,k:end),Qw*V(idxX,k:end),R,S);
-        lWtmp = -fliplr(cumsum(fliplr(log(1-r.^2))));
+        [~,~,rperm] = cca(Qz*U(idxY,k:end),Qw*V(idxX,k:end),R,S);
+        lWtmp = -fliplr(cumsum(fliplr(log(1-rperm.^2))));
         lW(k) = lWtmp(1);
     end
     if p == 1
@@ -137,7 +141,12 @@ for p = 1:nP
     cnt = cnt + (lW >= lW1);
 end
 punc  = cnt/nP;
-pfwer = cummax(punc);
+varargout{1} = cummax(punc); % pfwer
+varargout{2} = r;            % canonical correlations
+varargout{3} = A;            % canonical weights (left)
+varargout{4} = B;            % canonical weights (right)
+varargout{5} = Qz*Y*A;       % canonical variables (left)
+varargout{6} = Qw*X*B;       % canonical variables (right)
 
 % =================================================================
 function Q = semiortho(R,Sel)
