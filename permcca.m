@@ -77,13 +77,11 @@ I = eye(N);
 
 % Residualise Y wrt Z
 if ~ isempty(Z)
-    Rz = I - Z*pinv(Z);
-    Qz = semiortho(Rz,Sel);
+    Qz = semiortho(Z,Sel);
 else
-    Rz = I;
     Qz = I;
 end
-Y    = Qz'*Rz*Y;
+Y    = Qz'*Y;
 Pnew = size(Y,1);
 R    = size(Z,2);
 
@@ -93,17 +91,14 @@ if isempty(W) && partial
 end
 if ~ isempty(W)
     if partial
-        Rw = Rz;
         Qw = Qz;
     else % bipartial
-        Rw = I - W*pinv(W);
-        Qw = semiortho(Rw,Sel);
+        Qw = semiortho(W,Sel);
     end
 else
-    Rw = I;
     Qw = I;
 end
-X    = Qw'*Rw*X;
+X    = Qw'*X;
 Qnew = size(X,1);
 S    = size(W,2);
 
@@ -118,6 +113,7 @@ lW  = zeros(1,K);
 
 % For each permutation
 for p = 1:nP
+    fprintf('Permutation %d/%d: ',p,nP);
     
     % First permutation is no permutation
     if p == 1
@@ -130,6 +126,7 @@ for p = 1:nP
     
     % For each canonical variable
     for k = 1:K
+        fprintf('%d ',k);
         [~,~,rperm] = cca(Qz*U(idxY,k:end),Qw*V(idxX,k:end),R,S);
         lWtmp = -fliplr(cumsum(fliplr(log(1-rperm.^2))));
         lW(k) = lWtmp(1);
@@ -137,8 +134,8 @@ for p = 1:nP
     if p == 1
         lW1 = lW;
     end
-    
     cnt = cnt + (lW >= lW1);
+    fprintf('\n');
 end
 punc  = cnt/nP;
 varargout{1} = cummax(punc); % pfwer
@@ -149,32 +146,33 @@ varargout{5} = Qz*Y*A;       % canonical variables (left)
 varargout{6} = Qw*X*B;       % canonical variables (right)
 
 % =================================================================
-function Q = semiortho(R,Sel)
+function Q = semiortho(Z,Sel)
 % Compute a semi-orthogonal matrix according to
-% the Huh-Jhun or Theil methods.
-if isempty(Sel)
-    % Huh-Jhun
-    [Q,L]  = schur(R);
-    o      = abs(diag(L)) < size(R,1)*eps(L(end:end));
-    Q(:,o) = [];
+% the Huh-Jhun or Theil methods. Note that, due to a
+% simplification of HJ, input here is Z, not Rz.
+if isempty(Sel)   
+    % Huh-Jhun simplified as in Winkler et al, 2020 (see Appendix text)
+    [Q,D,~] = svd(null(Z'),'econ');
+    Q = Q*D;
 else
     % Theil
+    R = eye(size(Z,1)) - Z*pinv(Z);
     Q = R*Sel*sqrtm(inv(Sel'*R*Sel));
 end
 
 % =================================================================
-function [A,B,cc] = cca(X,Y,R,S)
+function [A,B,cc] = cca(Y,X,R,S)
 % Compute CCA.
-N = size(X,1);
-[Qx,Rx,iX] = qr(X,0);
+N = size(Y,1);
 [Qy,Ry,iY] = qr(Y,0);
-K  = min(rank(X),rank(Y));
-[L,D,M] = svds(Qx'*Qy,K);
+[Qx,Rx,iX] = qr(X,0);
+K  = min(rank(Y),rank(X));
+[L,D,M] = svds(Qy'*Qx,K);
 cc = min(max(diag(D(:,1:K))',0),1);
-A  = Rx\L(:,1:K)*sqrt(N-R);
-B  = Ry\M(:,1:K)*sqrt(N-S);
-A(iX,:) = A;
-B(iY,:) = B;
+A  = Ry\L(:,1:K)*sqrt(N-R);
+B  = Rx\M(:,1:K)*sqrt(N-S);
+A(iY,:) = A;
+B(iX,:) = B;
 
 % =================================================================
 function X = center(X)
