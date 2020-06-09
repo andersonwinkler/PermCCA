@@ -19,7 +19,7 @@ function varargout = permcca(varargin)
 %              right side only (bipartial CCA).
 % - Sel      : (Optional) Selection vector, to use Thiel's
 %              residuals instead of Juh-Jhun's projection; 
-%              must select full-rank subset of Z (W). 
+%              P unselected rows of Z (Q of W) must be full rank.
 %              Set to -1 to randomly select N-P (N-Q) rows.
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
