@@ -17,9 +17,10 @@ function varargout = permcca(varargin)
 %              (part CCA) only.
 % - W        : (Optional) Nuisance variables for the
 %              right side only (bipartial CCA).
-% - Sel      : (Optional) Selection matrix; set to -1
-%              to randomly select rows based on rank
-%              of null(Z) (or null(W)).
+% - Sel      : (Optional) Selection vector, to use Thiel's
+%              residuals instead of Juh-Jhun's projection; 
+%              must select full-rank subset of Z (W). 
+%              Set to -1 to randomly select N-P (N-Q) rows.
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
 %              Default is true, i.e., partial CCA.
