@@ -175,9 +175,11 @@ else
             end
         end
     end
+    S = eye(N);
+    S = S(:,Sel);
     % Theil
     R = eye(size(Z,1)) - Z*pinv(Z);
-    Q = R*Sel*sqrtm(inv(Sel'*R*Sel));
+    Q = R*S*sqrtm(inv(S'*R*S));
 end
 
 % =================================================================
