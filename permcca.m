@@ -3,7 +3,7 @@ function varargout = permcca(varargin)
 % analysis (CCA).
 %
 % Usage:
-% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,S,partial)
+% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial)
 % 
 % 
 % Inputs:
