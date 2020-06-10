@@ -179,7 +179,7 @@ else
             while ~ foundSel
                 Sel   = sort(randperm(N,N-R));
                 Unsel = setdiff(1:N,Sel);
-                if rank(Z(Unsel,:)) == P
+                if rank(Z(Unsel,:)) == R
                     foundSel = true;
                 end
             end
