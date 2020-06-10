@@ -17,7 +17,10 @@ function varargout = permcca(varargin)
 %              (part CCA) only.
 % - W        : (Optional) Nuisance variables for the
 %              right side only (bipartial CCA).
-% - Sel      : (Optional) Selection matrix.
+% - Sel      : (Optional) Selection vector, to use Thiel's
+%              residuals instead of Juh-Jhun's projection; 
+%              P unselected rows of Z (Q of W) must be full rank.
+%              Set to -1 to randomly select N-P (N-Q) rows.
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
 %              Default is true, i.e., partial CCA.
@@ -155,9 +158,28 @@ if isempty(Sel)
     [Q,D,~] = svd(null(Z'),'econ');
     Q = Q*D;
 else
+    if Sel(1)>0
+        Unsel = setdiff(1:N,Sel);
+        if rank(Z(Unsel,:))<P
+            error('Unselected rows of nuisance not full rank')
+        end
+    else % Sel==-1
+        N = size(Z,1);
+        P = size(Z,2);
+        Done=false
+        while (~Done)
+            Sel = randperm(N,N-P);
+            Unsel  = setdiff(1:N,Sel);
+            if rank(Z(Unsel,:))==P
+                Done=true;
+            end
+        end
+    end
+    S = eye(N);
+    S = S(:,Sel);
     % Theil
     R = eye(size(Z,1)) - Z*pinv(Z);
-    Q = R*Sel*sqrtm(inv(Sel'*R*Sel));
+    Q = R*S*sqrtm(inv(S'*R*S));
 end
 
 % =================================================================
