@@ -21,7 +21,7 @@ function varargout = permcca(varargin)
 %              to use Theil's residuals instead of Huh-Jhun's
 %              projection. If specified as a vector, it can be
 %              made of integer indices or logicals.
-%              The N-R selected rows of Z (S of W) must be full
+%              The R unselected rows of Z (S of W) must be full
 %              rank. Use -1 to randomly select N-R (or N-S) rows.
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
