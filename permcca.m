@@ -177,7 +177,7 @@ else
             % Sel is -1 or anything else but empty [].
             foundSel = false
             while ~ foundSel
-                Sel   = randperm(N,N-R);
+                Sel   = sort(randperm(N,N-R));
                 Unsel = setdiff(1:N,Sel);
                 if rank(Z(Unsel,:)) == P
                     foundSel = true;
