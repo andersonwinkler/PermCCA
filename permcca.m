@@ -4,8 +4,8 @@ function varargout = permcca(varargin)
 %
 % Usage:
 % [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial)
-% 
-% 
+%
+%
 % Inputs:
 % - Y        : Left set of variables, size N by P.
 % - X        : Left set of variables, size N by Q.
@@ -17,10 +17,12 @@ function varargout = permcca(varargin)
 %              (part CCA) only.
 % - W        : (Optional) Nuisance variables for the
 %              right side only (bipartial CCA).
-% - Sel      : (Optional) Selection vector, to use Thiel's
-%              residuals instead of Juh-Jhun's projection; 
-%              P unselected rows of Z (Q of W) must be full rank.
-%              Set to -1 to randomly select N-P (N-Q) rows.
+% - Sel      : (Optional) Selection matrix or a selection vector,
+%              to use Theil's residuals instead of Huh-Jhun's
+%              projection. If specified as a vector, it can be
+%              made of integer indices or logicals.
+%              The N-R selected rows of Z (S of W) must be full
+%              rank. Use -1 to randomly select N-R (or N-S) rows.
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
 %              Default is true, i.e., partial CCA.
@@ -153,33 +155,43 @@ function Q = semiortho(Z,Sel)
 % Compute a semi-orthogonal matrix according to
 % the Huh-Jhun or Theil methods. Note that, due to a
 % simplification of HJ, input here is Z, not Rz.
-if isempty(Sel)   
+if isempty(Sel)
     % Huh-Jhun simplified as in Winkler et al, 2020 (see Appendix text)
     [Q,D,~] = svd(null(Z'),'econ');
     Q = Q*D;
 else
-    if Sel(1)>0
-        Unsel = setdiff(1:N,Sel);
-        if rank(Z(Unsel,:))<P
-            error('Unselected rows of nuisance not full rank')
+    % Theil
+    [N,R] = size(Z);
+    if isvector(Sel)
+        % Sel is a vector of logical or integer indices
+        if islogical(Sel)
+            Sel = find(Sel);
         end
-    else % Sel==-1
-        N = size(Z,1);
-        P = size(Z,2);
-        Done=false
-        while (~Done)
-            Sel = randperm(N,N-P);
-            Unsel  = setdiff(1:N,Sel);
-            if rank(Z(Unsel,:))==P
-                Done=true;
+        if Sel(1) > 0
+            % Sel is a column of indices
+            Unsel = setdiff(1:N,Sel);
+            if rank(Z(Unsel,:)) < R
+                error('Selected rows of nuisance not full rank')
+            end
+        else
+            % Sel is -1 or anything else but empty [].
+            foundSel = false
+            while ~ foundSel
+                Sel   = randperm(N,N-R);
+                Unsel = setdiff(1:N,Sel);
+                if rank(Z(Unsel,:)) == P
+                    foundSel = true;
+                end
             end
         end
+        S = eye(N);
+        S = S(:,Sel);
+    else
+        % Sel is a matrix proper
+        S = Sel;
     end
-    S = eye(N);
-    S = S(:,Sel);
-    % Theil
-    R = eye(size(Z,1)) - Z*pinv(Z);
-    Q = R*S*sqrtm(inv(S'*R*S));
+    Rz = eye(N) - Z*pinv(Z);
+    Q = Rz*S*sqrtm(inv(S'*Rz*S));
 end
 
 % =================================================================
