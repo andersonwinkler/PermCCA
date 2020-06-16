@@ -156,31 +156,32 @@ function Q = semiortho(Z,Sel)
 % the Huh-Jhun or Theil methods. Note that, due to a
 % simplification of HJ, input here is Z, not Rz.
 if isempty(Sel)
-    % If Sel is empty, do Huh-Jhun
-    % HJ here is simplified as in Winkler et al, 2020 (see the Appendix text of the paper)
+    % Huh-Jhun simplified as in Winkler et al, 2020 (see Appendix text)
     [Q,D,~] = svd(null(Z'),'econ');
     Q = Q*D;
 else
     % Theil
     [N,R] = size(Z);
     if isvector(Sel)
-        % If Sel is a vector of logical or integer indices
+        % Sel is a vector of logical or integer indices
         if islogical(Sel)
             Sel = find(Sel);
         end
         if Sel(1) > 0
-            % If Sel is a column of indices
+            % Sel is a column of indices
             Unsel = setdiff(1:N,Sel);
             if rank(Z(Unsel,:)) < R
                 error('Selected rows of nuisance not full rank')
             end
         else
-            % If Sel is -1 or anything else but empty [].
-            Sel = true(N,1);
-            [~,~,iU] = unique(Z,'rows');
-            nU = max(iU);
-            for r = randperm(nU,R)
-                Sel(find(iU == r,1)) = false;
+            % Sel is -1 or anything else but empty [].
+            foundSel = false
+            while ~ foundSel
+                Sel   = sort(randperm(N,N-R));
+                Unsel = setdiff(1:N,Sel);
+                if rank(Z(Unsel,:)) == R
+                    foundSel = true;
+                end
             end
         end
         S = eye(N);
