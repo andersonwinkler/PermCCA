@@ -170,19 +170,32 @@ else
         end
         if Sel(1) > 0
             % If Sel is a column of indices
-            Unsel = setdiff(1:N,Sel);
-            if rank(Z(Unsel,:)) < R
+            unSel = setdiff(1:N,Sel);
+            if rank(Z(unSel,:)) < R
                 error('Selected rows of nuisance not full rank')
             end
         else
             % If Sel is -1 or anything else but empty [].
+            % Try first with a faster approach
             Sel = true(N,1);
-            [~,~,iU] = unique(Z,'rows');
+            Zs  = bsxfun(@rdivide,Z,mean(Z,2));
+            [~,~,iU] = unique(Zs,'rows');
             nU = max(iU);
             for r = randperm(nU,R)
                 idx = find(iU == r);
                 idx = idx(randperm(numel(idx)));
                 Sel(idx(1)) = false;
+            end
+            % but it it fails, go with another one
+            if rank(Z(~Sel,:)) < R
+                foundSel = false;
+                while ~ foundSel
+                    Sel   = sort(randperm(N,N-R));
+                    unSel = setdiff(1:N,Sel);
+                    if rank(Z(unSel,:)) == R
+                        foundSel = true;
+                    end
+                end
             end
         end
         S = eye(N);
