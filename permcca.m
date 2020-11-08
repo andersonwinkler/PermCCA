@@ -43,21 +43,17 @@ function varargout = permcca(varargin)
 % Read input arguments
 narginchk(2,7)
 Y = varargin{1};
-Y = center(Y);
 X = varargin{2};
-X = center(X);
 if nargin >= 3
     nP = varargin{3};
 end
 if nargin >= 4
     Z = varargin{4};
-    Z = center(Z);
 else
     Z = [];
 end
 if nargin >= 5
     W = varargin{5};
-    W = center(W);
 else
     W = [];
 end
@@ -71,9 +67,8 @@ if nargin >= 7
 else
     partial = true;
 end
-[Ny,P] = size(Y);
-[Nx,Q] = size(X);
-K = min(P,Q);
+Ny = size(Y,1);
+Nx = size(X,1);
 if Ny ~= Nx
     error('Y and X do not have same number of rows.')
 end
@@ -81,34 +76,37 @@ N = Ny; clear Ny Nx
 I = eye(N);
 
 % Residualise Y wrt Z
-if ~ isempty(Z)
-    Qz = semiortho(Z,Sel);
-else
+if isempty(Z)
     Qz = I;
+else
+    Z  = center(Z);
+    Qz = semiortho(Z,Sel);
 end
-Y    = Qz'*Y;
-Pnew = size(Y,1);
-R    = size(Z,2);
+Y = center(Y);
+Y = Qz'*Y;
+P = size(Y,1);
+R = size(Z,2);
 
 % Residualise X wrt W
-if isempty(W) && partial
-    W = Z;
-end
-if ~ isempty(W)
+if isempty(W)
     if partial
+        W  = Z;
         Qw = Qz;
-    else % bipartial
-        Qw = semiortho(W,Sel);
+    else
+        Qw = I;
     end
 else
-    Qw = I;
+    W  = center(W);
+    Qw = semiortho(W,Sel);
 end
-X    = Qw'*X;
-Qnew = size(X,1);
-S    = size(W,2);
+X = center(X);
+X = Qw'*X;
+Q = size(X,1);
+S = size(W,2);
 
 % Initial CCA
-[A,B,r] = cca(Y,X,R,S);
+[A,B,r] = cca(Qz*Y,Qw*X,R,S);
+K = numel(r);
 U = Y*[A null(A')];
 V = X*[B null(B')];
 
@@ -122,11 +120,11 @@ for p = 1:nP
     
     % First permutation is no permutation
     if p == 1
-        idxY = (1:Pnew);
-        idxX = (1:Qnew);
+        idxY = (1:P);
+        idxX = (1:Q);
     else
-        idxY = randperm(Pnew);
-        idxX = randperm(Qnew);
+        idxY = randperm(P);
+        idxX = randperm(Q);
     end
     
     % For each canonical variable
