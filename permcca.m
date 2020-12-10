@@ -3,12 +3,12 @@ function varargout = permcca(varargin)
 % analysis (CCA).
 %
 % Usage:
-% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial)
+% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial,permsetY,permsetX)
 %
 %
 % Inputs:
 % - Y        : Left set of variables, size N by P.
-% - X        : Left set of variables, size N by Q.
+% - X        : Right set of variables, size N by Q.
 % - nP       : An integer representing the number
 %              of permutations.
 %              Default is 1000 permutations.
@@ -26,6 +26,13 @@ function varargout = permcca(varargin)
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
 %              Default is true, i.e., partial CCA.
+% - permsetY : (Optional) Matrix with predefined permutations for left set of 
+%              variables (permutations should be stored in columns). 
+%              Note: number of rows should equal number of selected rows.
+% - permsetX : (Optional) Matrix with predefined permutations for right set of
+%              variables (permutations should be stored in columns). If only 
+%              permsetY is provided, permsetX = permsetY.
+%              Note: number of rows should equal number of selected rows.
 %
 % Outputs:
 % - p   : p-values, FWER corrected via closure.
@@ -41,7 +48,7 @@ function varargout = permcca(varargin)
 % Mar/2020
 
 % Read input arguments
-narginchk(2,7)
+narginchk(2,9)
 Y = varargin{1};
 X = varargin{2};
 if nargin >= 3
@@ -67,6 +74,25 @@ if nargin >= 7
 else
     partial = true;
 end
+if nargin >= 8
+    permsetY = varargin{8};
+else
+    permsetY = false;
+end
+if nargin >= 9
+    permsetX = varargin{9};
+elseif permsetY
+    permsetX = permsetY;
+end
+if permsetY
+    if size(permsetY,2) < nP
+        error("permsetY does not contain enough permutations.")
+    end
+    if size(permsetX,2) < nP
+        error("permsetX does not contain enough permutations.")
+    end
+end
+
 Ny = size(Y,1);
 Nx = size(X,1);
 if Ny ~= Nx
@@ -87,6 +113,10 @@ Y = Qz'*Y;
 P = size(Y,1);
 R = size(Z,2);
 
+if size(permsetY,1) ~= (N - R)
+    error('Number of rows in permsetY is not valid.')
+end
+
 % Residualise X wrt W
 if isempty(W)
     if partial
@@ -103,6 +133,9 @@ X = center(X);
 X = Qw'*X;
 Q = size(X,1);
 S = size(W,2);
+if size(permsetX,1) ~= (N - S)
+    error('Number of rows in permsetS is not valid.')
+end
 
 % Initial CCA
 [A,B,r] = cca(Qz*Y,Qw*X,R,S);
@@ -123,8 +156,13 @@ for p = 1:nP
         idxY = (1:P);
         idxX = (1:Q);
     else
-        idxY = randperm(P);
-        idxX = randperm(Q);
+        if permsetY
+            idxY = permsetY(:,p);
+            idxX = permsetX(:,p);
+        else
+            idxY = randperm(P);
+            idxX = randperm(Q);
+        end
     end
     
     % For each canonical variable
