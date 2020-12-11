@@ -3,7 +3,7 @@ function varargout = permcca(varargin)
 % analysis (CCA).
 %
 % Usage:
-% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial,permsetY,permsetX)
+% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial,permsetY,permsetX,ncompY,ncompX)
 %
 %
 % Inputs:
@@ -33,6 +33,10 @@ function varargout = permcca(varargin)
 %              variables (permutations should be stored in columns). If only 
 %              permsetY is provided, permsetX = permsetY.
 %              Note: number of rows should equal number of selected rows.
+% - ncompY   : (Optional) Number of components after dimensionality reduction using 
+%              SVD on left side.
+% - ncompX   : (Optional) Number of components after dimensionality reduction using 
+%              SVD on right side.
 %
 % Outputs:
 % - p   : p-values, FWER corrected via closure.
@@ -48,7 +52,7 @@ function varargout = permcca(varargin)
 % Mar/2020
 
 % Read input arguments
-narginchk(2,9)
+narginchk(2,11)
 Y = varargin{1};
 X = varargin{2};
 if nargin >= 3
@@ -84,6 +88,17 @@ if nargin >= 9
 elseif permsetY
     permsetX = permsetY;
 end
+if nargin >= 10
+    ncompY = varargin{10};
+else
+    ncompY = false;
+end
+if nargin >= 11
+    ncompX = varargin{11};
+else
+    ncompX = false;
+end
+
 if permsetY
     if size(permsetY,2) < nP
         error("permsetY does not contain enough permutations.")
@@ -135,6 +150,14 @@ Q = size(X,1);
 S = size(W,2);
 if size(permsetX,1) ~= (N - S)
     error('Number of rows in permsetS is not valid.')
+end
+
+% Dimensionality reduction
+if ncompY
+    [Y, ~, ~] = svds(Y, ncompY);
+end
+if ncompX
+    [X, ~, ~] = svds(X, ncompX);
 end
 
 % Initial CCA
