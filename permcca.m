@@ -80,13 +80,19 @@ else
 end
 if nargin >= 8
     permsetY = varargin{8};
+    if size(permsetY,2) < nP
+        error("permsetY does not contain enough permutations.")
+    end
 else
     permsetY = false;
 end
 if nargin >= 9
     permsetX = varargin{9};
-elseif permsetY
-    permsetX = permsetY;
+    if size(permsetX,2) < nP
+        error("permsetX does not contain enough permutations.")
+    end
+else
+    permsetX = false;
 end
 if nargin >= 10
     ncompY = varargin{10};
@@ -97,15 +103,6 @@ if nargin >= 11
     ncompX = varargin{11};
 else
     ncompX = false;
-end
-
-if permsetY
-    if size(permsetY,2) < nP
-        error("permsetY does not contain enough permutations.")
-    end
-    if size(permsetX,2) < nP
-        error("permsetX does not contain enough permutations.")
-    end
 end
 
 Ny = size(Y,1);
@@ -181,9 +178,12 @@ for p = 1:nP
     else
         if permsetY
             idxY = permsetY(:,p);
-            idxX = permsetX(:,p);
         else
             idxY = randperm(P);
+        end
+        if permsetX
+            idxX = permsetX(:,p);
+        else
             idxX = randperm(Q);
         end
     end
