@@ -3,12 +3,11 @@ function varargout = permcca(varargin)
 % analysis (CCA).
 %
 % Usage:
-% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial)
-%
+% [pfwer,r,A,B,U,V] = permcca(Y,X,nP,Z,W,Sel,partial,Pset)
 %
 % Inputs:
 % - Y        : Left set of variables, size N by P.
-% - X        : Left set of variables, size N by Q.
+% - X        : Right set of variables, size N by Q.
 % - nP       : An integer representing the number
 %              of permutations.
 %              Default is 1000 permutations.
@@ -26,6 +25,14 @@ function varargout = permcca(varargin)
 % - partial  : (Optional) Boolean indicating whether
 %              this is partial (true) or part (false) CCA.
 %              Default is true, i.e., partial CCA.
+% - Pset     : Predefined set of permutations (e.g., that respect
+%              exchangeability blocks). For information on how to
+%              generate these, see:
+%              https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM
+%              If a selection matrix is provided (for the Theil method),
+%              Pset will have to have fewer rows than the original N, i.e.,
+%              it will have as many rows as the effective number of
+%              subjects determined by the selection matrix.
 %
 % Outputs:
 % - p   : p-values, FWER corrected via closure.
@@ -38,10 +45,11 @@ function varargout = permcca(varargin)
 % ___________________________________________
 % AM Winkler, O Renaud, SM Smith, TE Nichols
 % NIH - Univ. of Geneva - Univ. of Oxford
-% Mar/2020
+% Mar/2020 (first version)
+% Apr/2021 (this version)
 
 % Read input arguments
-narginchk(2,7)
+narginchk(2,8)
 Y = varargin{1};
 X = varargin{2};
 if nargin >= 3
@@ -67,6 +75,11 @@ if nargin >= 7
 else
     partial = true;
 end
+if nargin >= 8
+    Pset = varargin{8};
+else
+    Pset = false;
+end
 Ny = size(Y,1);
 Nx = size(X,1);
 if Ny ~= Nx
@@ -82,10 +95,10 @@ else
     Z  = center(Z);
     Qz = semiortho(Z,Sel);
 end
-Y = center(Y);
-Y = Qz'*Y;
-P = size(Y,1);
-R = size(Z,2);
+Y  = center(Y);
+Y  = Qz'*Y;
+Ny = size(Y,1);
+R  = size(Z,2);
 
 % Residualise X wrt W
 if isempty(W)
@@ -99,10 +112,10 @@ else
     W  = center(W);
     Qw = semiortho(W,Sel);
 end
-X = center(X);
-X = Qw'*X;
-Q = size(X,1);
-S = size(W,2);
+X  = center(X);
+X  = Qw'*X;
+Nx = size(X,1);
+S  = size(W,2);
 
 % Initial CCA
 [A,B,r] = cca(Qz*Y,Qw*X,R,S);
@@ -118,15 +131,23 @@ lW  = zeros(1,K);
 for p = 1:nP
     fprintf('Permutation %d/%d: ',p,nP);
     
-    % First permutation is no permutation
-    if p == 1
-        idxY = (1:P);
-        idxX = (1:Q);
+    % If user didn't supply a set of permutations,
+    % permute randomly both Y and X.
+    % Otherwise, use the permtuation set to shuffle
+    % one side only.
+    if islogical(Pset)
+        % First permutation is no permutation
+        if p == 1
+            idxY = (1:Ny);
+            idxX = (1:Nx);
+        else
+            idxY = randperm(Ny);
+            idxX = randperm(Nx);
+        end
     else
-        idxY = randperm(P);
-        idxX = randperm(Q);
+        idxY = Pset(:,p);
+        idxX = (1:Nx);
     end
-    
     % For each canonical variable
     for k = 1:K
         fprintf('%d ',k);
