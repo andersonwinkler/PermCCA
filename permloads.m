@@ -33,7 +33,7 @@ function varargout = permloads(varargin)
 %              Pset will have to have fewer rows than the original N, i.e.,
 %              it will have as many rows as the effective number of
 %              subjects determined by the selection matrix.
-% nK         : When correcting the loadings, consider only the first nK
+% - nK       : When correcting the loadings, consider only the first nK
 %              canonical modes. If not supplied, all will be considered.
 % 
 % Outputs:
@@ -43,8 +43,12 @@ function varargout = permloads(varargin)
 % - B   : Canonical coefficients, right side.
 % - U   : Canonical variables, left side.
 % - V   : Canonical variables, right side.
-% - pA  : P-value for the loadings, left side.
-% - pB  : P-value for the loadings, right side.
+% - pA  : P-values for the loadings, left side. If nK was supplied, it's
+%         FWER-corrected only up to nK-th component, otherwise it's
+%         uncorrected.
+% - pB  : P-values for the loadings, right side. If nK was supplied, it's
+%         FWER-corrected only up to nK-th component, otherwise it's
+%         uncorrected.
 % 
 % ___________________________________________
 % AM Winkler, O Renaud, SM Smith, TE Nichols
@@ -170,8 +174,8 @@ for p = 1:nP
         Uperm(:,k) = U(idxY,k:end)*Aperm(:,1);
         Vperm(:,k) = V(idxY,k:end)*Bperm(:,1);
     end
-    Lload = corr(Y,Uperm);
-    Rload = corr(X,Vperm);
+    Lload = abs(corr(Y,Uperm));
+    Rload = abs(corr(X,Vperm));
     if p == 1
         lW1 = lW;
         Lload1 = Lload;
@@ -180,11 +184,12 @@ for p = 1:nP
     cnt  = cnt  + (lW    >= lW1);
     if nK
         idx = 1:nK;
+        Lcnt = Lcnt + (max(max(Lload(:,idx),[],1),[],2) >= Lload1);
+        Rcnt = Rcnt + (max(max(Rload(:,idx),[],1),[],2) >= Rload1);
     else
-        idx = 1:K;
+        Lcnt = Lcnt + (Lload >= Lload1);
+        Rcnt = Rcnt + (Rload >= Rload1);
     end
-    Lcnt = Lcnt + (max(max(Lload(:,idx),[],1),[],2) >= Lload1);
-    Rcnt = Rcnt + (max(max(Rload(:,idx),[],1),[],2) >= Rload1);
     fprintf('\n');
 end
 punc   = cnt/nP;
@@ -196,8 +201,8 @@ varargout{3} = A;            % canonical weights (left)
 varargout{4} = B;            % canonical weights (right)
 varargout{5} = Qz*Y*A;       % canonical variables (left)
 varargout{6} = Qw*X*B;       % canonical variables (right)
-varargout{7} = pfwerA;
-varargout{8} = pfwerB;
+varargout{7} = pA;           % p-value for the individual weights, left side.
+varargout{8} = pB;           % p-value for the individual weights, right side.
 % =================================================================
 function Q = semiortho(Z,Sel)
 % Compute a semi-orthogonal matrix according to
