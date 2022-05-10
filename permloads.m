@@ -3,7 +3,7 @@ function varargout = permloads(varargin)
 % analysis (CCA).
 %
 % Usage:
-% [pfwer,r,A,B,U,V,pA,pB] = permcca(Y,X,nP,Z,W,Sel,partial,Pset,nK)
+% [pfwer,r,A,B,U,V,pA,pB] = permloads(Y,X,nP,Z,W,Sel,partial,Pset,nK)
 %
 % Inputs:
 % - Y        : Left set of variables, size N by P.
