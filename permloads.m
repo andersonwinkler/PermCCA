@@ -34,7 +34,7 @@ function varargout = permloads(varargin)
 %              it will have as many rows as the effective number of
 %              subjects determined by the selection matrix.
 % - nK       : When correcting the loadings, consider only the first nK
-%              canonical modes. If not supplied, all will be considered.
+%              canonical modes. If not supplied, it will be uncorrected.
 % 
 % Outputs:
 % - p   : p-values, FWER corrected via closure.
@@ -183,18 +183,20 @@ for p = 1:nP
     end
     cnt  = cnt  + (lW    >= lW1);
     if nK
+        % FWER-correction if nK is supplied
         idx = 1:nK;
         Lcnt = Lcnt + (max(max(Lload(:,idx),[],1),[],2) >= Lload1);
         Rcnt = Rcnt + (max(max(Rload(:,idx),[],1),[],2) >= Rload1);
     else
+        % Uncorrected if nK == 0
         Lcnt = Lcnt + (Lload >= Lload1);
         Rcnt = Rcnt + (Rload >= Rload1);
     end
     fprintf('\n');
 end
-punc   = cnt/nP;
-pfwerA = Lcnt/nP;
-pfwerB = Rcnt/nP;
+punc = cnt/nP;
+pA   = Lcnt/nP;
+pB   = Rcnt/nP;
 varargout{1} = cummax(punc); % pfwer
 varargout{2} = r;            % canonical correlations
 varargout{3} = A;            % canonical weights (left)
