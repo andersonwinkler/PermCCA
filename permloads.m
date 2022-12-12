@@ -172,7 +172,7 @@ for p = 1:nP
         lWtmp = -fliplr(cumsum(fliplr(log(1-rperm.^2))));
         lW(k) = lWtmp(1);
         Uperm(:,k) = U(idxY,k:end)*Aperm(:,1);
-        Vperm(:,k) = V(idxY,k:end)*Bperm(:,1);
+        Vperm(:,k) = V(idxX,k:end)*Bperm(:,1);
     end
     Lload = abs(corr(Y,Uperm));
     Rload = abs(corr(X,Vperm));
