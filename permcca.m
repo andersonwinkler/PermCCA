@@ -195,27 +195,33 @@ else
             end
         else
             % If Sel is -1 or anything else but empty [].
-            % Try first with a faster approach
-            Sel = true(N,1);
-            Zs  = bsxfun(@rdivide,Z,mean(Z,2));
-            [~,~,iU] = unique(Zs,'rows');
-            nU = max(iU);
-            for r = randperm(nU,R)
-                idx = find(iU == r);
-                idx = idx(randperm(numel(idx)));
-                Sel(idx(1)) = false;
+            % First confirm that this is even possible
+            rZ = rank(Z);
+            if rZ < R
+                error('Impossible to use the Theil method with this set of nuisance variables')
             end
-            % but it it fails, go with another one
-            if rank(Z(~Sel,:)) < R
-                foundSel = false;
-                while ~ foundSel
-                    Sel   = sort(randperm(N,N-R));
-                    unSel = setdiff(1:N,Sel);
-                    if rank(Z(unSel,:)) == R
-                        foundSel = true;
-                    end
+
+            % Find unique rows; since unique sorts outputs, shuffle to avoid trends
+            [~,iU,~] = unique(Z,'rows');
+            pidx = randperm(numel(iU));
+            iU = iU(pidx);
+
+            % Go by trial and error
+            unSel0 = [];
+            rnk0   = 0;
+            for u = iU'
+                unSel = [unSel0 u];
+                Zout  = Z(unSel,:);
+                rnk   = rank(Zout);
+                if rnk > rnk0
+                    unSel0 = unSel;
+                    rnk0   = rnk;
+                end
+                if rnk == R
+                    break
                 end
             end
+            Sel = setdiff((1:N),unSel);
         end
         S = eye(N);
         S = S(:,Sel);
