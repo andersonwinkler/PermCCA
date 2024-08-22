@@ -171,8 +171,8 @@ for p = 1:nP
         [Aperm,Bperm,rperm] = cca(Qz*U(idxY,k:end),Qw*V(idxX,k:end),R,S);
         lWtmp = -fliplr(cumsum(fliplr(log(1-rperm.^2))));
         lW(k) = lWtmp(1);
-        Uperm(:,k) = U(idxY,k:end)*Aperm(:,1);
-        Vperm(:,k) = V(idxX,k:end)*Bperm(:,1);
+        Uperm(:,k) = U(:,k:end)*Aperm(:,1);
+        Vperm(:,k) = V(:,k:end)*Bperm(:,1);
     end
     Lload = abs(corr(Y,Uperm));
     Rload = abs(corr(X,Vperm));
